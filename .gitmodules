@@ -1,0 +1,6 @@
+[submodule "lib/carcom"]
+	path = lib/carcom
+	url = git@github.com:mx-car/carcom.git
+[submodule "lib/carbldc"]
+	path = lib/carbldc
+	url = git@github.com:mx-car/carbldc.git
