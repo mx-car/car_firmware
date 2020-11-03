@@ -7,3 +7,6 @@
 [submodule "lib/carimu"]
 	path = lib/carimu
 	url = git@github.com:mx-car/carimu.git
+[submodule "lib/carmotion"]
+	path = lib/carmotion
+	url = git@github.com:mx-car/carmotion.git
