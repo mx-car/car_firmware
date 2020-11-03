@@ -4,3 +4,6 @@
 [submodule "lib/carbldc"]
 	path = lib/carbldc
 	url = git@github.com:mx-car/carbldc.git
+[submodule "lib/carimu"]
+	path = lib/carimu
+	url = git@github.com:mx-car/carimu.git
