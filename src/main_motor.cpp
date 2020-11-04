@@ -3,11 +3,11 @@
 //
 #include <array>
 #include "car/bldc/Controller.h"
-#include "car/bldc/SteeringServoController.h"
 #include "car/bldc/utils.h"
 #include <arm_math.h>
 #include <car/com/mc/interface.h>
-#include <car/com/mc/cycle_rate.h>
+#include <car/time/cycle_rate.h>
+#include <Servo.h>
 
 #if defined(NEW_BOARD)
 constexpr INHPins inhibitPins_{33, 26, 31};
@@ -21,8 +21,8 @@ constexpr ISPins isPins2{A15, A16, A17};
 
 Motor motor1(inhibitPins2, initPins2, 14, isPins2);
 
-car::com::mc::CycleRate cycle_uart(100);
-car::com::mc::CycleRate cycle_whatchdog(1000);
+car::time::CycleRate cycle_uart(100);
+car::time::CycleRate cycle_whatchdog(1000);
 
 Servo myservo; 
 
@@ -45,6 +45,32 @@ void ftm0_isr(void)
 car::com::mc::Interface msg_tx; /// object to hande the serial communication
 car::com::mc::Interface msg_rx; /// object to hande the serial communication
 car::com::objects::Text text;   /// object to debug msgs
+
+car::com::objects::State getCommmand(Controller &controller){
+    static car::com::objects::State state;
+    state.rps[car::com::objects::State::LEFT] = controller.command[car::com::objects::State::LEFT];
+    state.rps[car::com::objects::State::RIGHT] = controller.command[car::com::objects::State::RIGHT];
+    state.stamp.fromMicros(controller.tstamp_command[car::com::objects::State::LEFT] / 2UL + controller.tstamp_command[car::com::objects::State::RIGHT] / 2UL );
+    return state;
+}
+
+car::com::objects::State getState(Controller &controller){
+    static car::com::objects::State state;
+    state.rps[car::com::objects::State::LEFT] = controller.speed[car::com::objects::State::LEFT];
+    state.rps[car::com::objects::State::RIGHT] = controller.speed[car::com::objects::State::RIGHT];
+    state.stamp.fromMicros(controller.tstamp_state[car::com::objects::State::LEFT] / 2UL + controller.tstamp_state[car::com::objects::State::RIGHT] / 2UL );
+    state.stamp.now();
+    return state;
+}
+
+
+void setCommmand(Controller &controller, car::com::objects::State state){
+    controller.tstamp_command[car::com::objects::State::LEFT] = micros();
+    controller.tstamp_command[car::com::objects::State::RIGHT] = micros();
+    controller.command[car::com::objects::State::LEFT] = state.rps[car::com::objects::State::LEFT];
+    controller.command[car::com::objects::State::RIGHT] = state.rps[car::com::objects::State::RIGHT];
+    myservo.write(state.steering);
+}
 
 void setup()
 {
@@ -90,8 +116,8 @@ void loop()
         {
             msg_tx.push_object(car::com::objects::Object(text, car::com::objects::TYPE_TEXT));
         }
-        msg_tx.push_object(car::com::objects::Object(Controller::getInstance().target, car::com::objects::TYPE_COMMAND_RAW));
-        msg_tx.push_object(car::com::objects::Object(Controller::getInstance().state, car::com::objects::TYPE_STATE_RAW));
+        msg_tx.push_object(car::com::objects::Object(getCommmand(Controller::getInstance()), car::com::objects::TYPE_COMMAND_RAW));
+        msg_tx.push_object(car::com::objects::Object(getState(Controller::getInstance()), car::com::objects::TYPE_STATE_RAW));
         msg_tx.send();
     }
 
@@ -108,8 +134,9 @@ void loop()
                 break;
             case car::com::objects::TYPE_COMMAND_RAW:
             {
-                static car::com::objects::CmdRaw o;
-                object.get(Controller::getInstance().target);
+                static car::com::objects::CmdRaw command;                
+                object.get(command);
+                setCommmand(Controller::getInstance(), command);
             }
             break;
             default: /// case unkown type
@@ -117,6 +144,5 @@ void loop()
                 continue;
             }
         }
-        myservo.write(Controller::getInstance().target.steering);
     }
 }

@@ -7,8 +7,8 @@
 
 #include <Arduino.h>
 
-#include <car/com/mc/cycle_rate.h>
-car::com::mc::CycleRate cycle_rate(500); /// object for a constant cycle control
+#include <car/time/cycle_rate.h>
+car::time::CycleRate cycle_rate(500); /// object for a constant cycle control
 
 int led = 13;
 bool led_target = LOW;

@@ -1,0 +1,26 @@
+{
+    "name": "cartime",
+    "version": "1.0.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/mx-car/cartime.git"
+    },
+    "authors": [
+        {
+            "name": "Markus Bader",
+            "email": "markus.bader@mx-robotics.com",
+            "url": "http://www.mx-robotics.com",
+            "maintainer": true
+        }
+    ],
+    "build": {
+        "flags": [
+            "-I common/include"
+        ],
+        "srcFilter": [
+            "+<common/src/car/time/*.cpp>"
+        ]
+    },
+    "frameworks": "*",
+    "platforms": "*"
+}
