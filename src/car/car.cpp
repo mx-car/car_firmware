@@ -12,15 +12,19 @@ Car::Car()
     constexpr INHPins inhibitPins2{28, 8, 25};
     constexpr PWMPins initPins2{5, 6, 9};
     constexpr ISPins isPins2{A15, A16, A17};
-    motors.emplace_back(std::move(Motor(inhibitPins_, initPins, 2, isPins)));
-    motors.emplace_back(std::move(Motor(inhibitPins2, initPins2, 2, isPins2)));
+    //    motors.emplace_back(std::move(Motor(inhibitPins_, initPins, 2, isPins)));
+    //motors.emplace_back(std::move(Motor(inhibitPins2, initPins2, 2, isPins2)));
+    Motor *motor0 = new Motor(inhibitPins_, initPins, 2, isPins);
+    Motor *motor1 = new Motor(inhibitPins2, initPins2, 14, isPins2);
 
     motor_controller = &Controller::getInstance();
-    motor_controller->registerMotors(&motors[0]); // 80
-    motors[0].setAngleOffset(-10);                        // - 10 seems aight for CCW
-    motors[0].setAsRightWheel();
-    motor_controller->registerMotors(&motors[0]);
-    motors[1].setAngleOffset(-10); // - 110 is da best for direction, - 10 for the other one
+    motor_controller->registerMotors(motor0); // 80
+    motor0->setAngleOffset(-10);  
+    motor0->setAsRightWheel();
+    motor_controller->registerMotors(motor1);
+    motor0->setAngleOffset(-10); // - 110 is da best for direction, - 10 for the other one                   // - 10 seems aight for CCW
+
+    steering_servo.attach(4); 
 }
 
 void Car::uart_init()
@@ -47,6 +51,7 @@ void Car::uart_receive()
                 object.get(command);
                 motor_controller->setCommand(command.rps[0], 0);
                 motor_controller->setCommand(command.rps[1], 1);
+                steering_servo.write(command.steering);
             }
             break;
             default: /// case unkown type

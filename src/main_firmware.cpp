@@ -13,7 +13,6 @@
 car::time::CycleRate cycle_uart(100);
 car::time::CycleRate cycle_whatchdog(1000);
 
-Servo myservo; 
 
 car::Car vehicle = car::Car::getInstance();
 
@@ -29,11 +28,6 @@ void ftm0_isr(void)
 
 void setup()
 {
-#if defined(NEW_BOARD)
-    myservo.attach(4); 
-#else
-    Controller::getInstance().registerMotors(&x);
-#endif
     vehicle.uart_init();    /// blocks until a sync message arrives
 
     while (!Serial)

@@ -10,6 +10,7 @@
 #include <car/com/mc/interface.h>
 #include <car/bldc/Controller.h>
 #include <vector>
+#include <Servo.h>
 
 namespace car
 {
@@ -32,6 +33,9 @@ namespace car
         car::com::mc::Interface msg_rx; /// object to hande the serial communication
         car::com::objects::Text text;   /// object to debug msgs
         Controller *motor_controller;
+
+
+        Servo steering_servo; 
     };
 
 } // namespace car
