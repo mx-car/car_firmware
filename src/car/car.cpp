@@ -45,13 +45,13 @@ void Car::uart_receive()
             case car::com::objects::TYPE_SYNC:                         /// case sync object
                 car::com::objects::Time::compute_offset(msg_rx.stamp); /// set clock
                 break;
-            case car::com::objects::TYPE_COMMAND_RAW:
+            case car::com::objects::TYPE_RACE_CAR:
             {
-                static car::com::objects::CmdRaw command;
-                object.get(command);
-                motor_controller->setCommand(command.rps[0], 0);
-                motor_controller->setCommand(command.rps[1], 1);
-                steering_servo.write(command.steering);
+                static car::com::objects::RaceCar car_target;
+                object.get(car_target);
+                motor_controller->setCommand(car_target.motors.motor[0]*100., 0);
+                motor_controller->setCommand(car_target.motors.motor[1]*100., 1);
+                steering_servo.write(car_target.motors.servo*90+90);
             }
             break;
             default: /// case unkown type
@@ -70,18 +70,14 @@ void Car::uart_send()
         msg_tx.push_object(car::com::objects::Object(text, car::com::objects::TYPE_TEXT));
     }
     {
-        car::com::objects::State state;
-        state.rps[car::com::objects::State::LEFT] = motor_controller->getCommand(car::com::objects::State::LEFT);
-        state.rps[car::com::objects::State::RIGHT] = motor_controller->getCommand(car::com::objects::State::RIGHT);
-        state.stamp.fromMicros(motor_controller->getTStampCommand());
-        msg_tx.push_object(car::com::objects::Object(state, car::com::objects::TYPE_COMMAND_RAW));
-    }
-    {
-        static car::com::objects::State state;
-        state.rps[car::com::objects::State::LEFT] = motor_controller->getSpeed(car::com::objects::State::LEFT);
-        state.rps[car::com::objects::State::RIGHT] = motor_controller->getSpeed(car::com::objects::State::RIGHT);
-        state.stamp.fromMicros(motor_controller->getTStampMeasurement());
-        msg_tx.push_object(car::com::objects::Object(state, car::com::objects::TYPE_STATE_RAW));
+        car::com::objects::RaceCar car_state;
+        car_state.motors.motor[car::com::objects::LEFT] = motor_controller->getCommand(car::com::objects::LEFT) / 100.;
+        car_state.motors.motor[car::com::objects::RIGHT] = motor_controller->getCommand(car::com::objects::RIGHT) / 100.;
+        car_state.measurments.rps[car::com::objects::LEFT] = motor_controller->motors[car::com::objects::LEFT]->speedRPS;
+        car_state.measurments.rps[car::com::objects::RIGHT] = motor_controller->motors[car::com::objects::RIGHT]->speedRPS;
+        car_state.motors.stamp.fromMicros(motor_controller->getTStampCommand());
+        car_state.stamp = car::com::objects::Time::now();
+        msg_tx.push_object(car::com::objects::Object(car_state, car::com::objects::TYPE_RACE_CAR));
     }
     msg_tx.send();
 }
