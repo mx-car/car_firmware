@@ -1,5 +1,6 @@
 
 #include <car/car.h>
+#include <HardwareSerial.h>
 
 using namespace car;
 
@@ -37,21 +38,25 @@ void Car::uart_receive()
 {
     if (msg_rx.receive())
     { /// check for messages
-        static car::com::objects::Object object;
+    using namespace car::com::objects;
+        static Object object;
         while (msg_rx.pop_object(object).isValid())
         {
             switch (object.type)
             {
-            case car::com::objects::TYPE_SYNC:                         /// case sync object
-                car::com::objects::Time::compute_offset(msg_rx.stamp); /// set clock
+            case TYPE_SYNC:                         /// case sync object
+                Time::compute_offset(msg_rx.stamp); /// set clock
+                text.write("TYPE_SYNC received");
                 break;
-            case car::com::objects::TYPE_RACE_CAR:
+            case TYPE_RACE_CAR:
             {
-                static car::com::objects::RaceCar car_target;
+                static RaceCar car_target;
                 object.get(car_target);
-                motor_controller->setCommand(car_target.motors.motor[0]*100., 0);
-                motor_controller->setCommand(car_target.motors.motor[1]*100., 1);
-                steering_servo.write(car_target.motors.servo*90+90);
+                motor_controller->setCommand(car_target.wheels[REAR_WHEEL_LEFT].target[ROTATION]*100., 0);
+                motor_controller->setCommand(car_target.wheels[REAR_WHEEL_RIGHT].target[ROTATION]*100., 1);
+                float steering = car_target.wheels[FRONT_WHEEL_RIGHT].target[STEERING]/2. + car_target.wheels[FRONT_WHEEL_LEFT].target[STEERING]/2.;
+                steering_servo.write(steering*90+90);
+                text.write("TYPE_RACE_CAR received");
             }
             break;
             default: /// case unkown type
@@ -64,20 +69,20 @@ void Car::uart_receive()
 
 void Car::uart_send()
 {
+    using namespace car::com::objects;
     msg_tx.reset(); /// removes all objects in message
     if (!text.empty())
     {
-        msg_tx.push_object(car::com::objects::Object(text, car::com::objects::TYPE_TEXT));
+        msg_tx.push_object(Object(text, TYPE_TEXT));
     }
     {
-        car::com::objects::RaceCar car_state;
-        car_state.motors.motor[car::com::objects::LEFT] = motor_controller->getCommand(car::com::objects::LEFT) / 100.;
-        car_state.motors.motor[car::com::objects::RIGHT] = motor_controller->getCommand(car::com::objects::RIGHT) / 100.;
-        car_state.measurments.rps[car::com::objects::LEFT] = motor_controller->motors[car::com::objects::LEFT]->speedRPS;
-        car_state.measurments.rps[car::com::objects::RIGHT] = motor_controller->motors[car::com::objects::RIGHT]->speedRPS;
-        car_state.motors.stamp.fromMicros(motor_controller->getTStampCommand());
-        car_state.stamp = car::com::objects::Time::now();
-        msg_tx.push_object(car::com::objects::Object(car_state, car::com::objects::TYPE_RACE_CAR));
+        RaceCar car_state;
+        car_state.wheels[REAR_WHEEL_LEFT].target[ROTATION] = motor_controller->getCommand(LEFT) / 100.;
+        car_state.wheels[REAR_WHEEL_RIGHT].target[ROTATION] = motor_controller->getCommand(RIGHT) / 100.;
+        car_state.wheels[REAR_WHEEL_LEFT].speed[ROTATION] = motor_controller->motors[LEFT]->speedRPS;
+        car_state.wheels[REAR_WHEEL_RIGHT].speed[ROTATION] = motor_controller->motors[RIGHT]->speedRPS;
+        car_state.stamp = Time::now();
+        msg_tx.push_object(Object(car_state, TYPE_RACE_CAR));
     }
     msg_tx.send();
 }
