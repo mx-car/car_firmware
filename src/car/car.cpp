@@ -98,6 +98,12 @@ void Car::uart_send()
     if(config_ackermann){
         msg_tx.push_object(Object(*config_ackermann, TYPE_CONFIG_ACKERMANN));
     }
+    if(false){
+        Array<4> a;
+        for(int i = 0; i < 4; i++) a.values[i] = rand()/1000.0;
+        a.values[0] = 1.1234; a.values[3] = 3.543; 
+        msg_tx.push_object(Object(a, TYPE_ARRAY_4N));
+    }
     
     
     msg_tx.send();
