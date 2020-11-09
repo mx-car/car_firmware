@@ -36,6 +36,9 @@ namespace car
 
 
         Servo steering_servo; 
+        car::com::objects::ConfigAckermann *config_ackermann;
+        car::com::objects::CommandAckermann *command_ackermann;
+        car::com::objects::StateAckermann *state_ackermann;
     };
 
 } // namespace car

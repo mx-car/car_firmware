@@ -26,11 +26,14 @@ Car::Car()
     motor0->setAngleOffset(-10); // - 110 is da best for direction, - 10 for the other one                   // - 10 seems aight for CCW
 
     steering_servo.attach(4); 
+    config_ackermann = NULL;
+    command_ackermann = NULL;
+    state_ackermann = new car::com::objects::StateAckermann();
 }
 
 void Car::uart_init()
 {
-    Serial.begin(500000); /// init serial
+    Serial.begin(115200); /// init serial
     msg_rx.try_sync();    /// blocks until a sync message arrives
 }
 
@@ -47,14 +50,21 @@ void Car::uart_receive()
             case TYPE_SYNC:                         /// case sync object
                 Time::compute_offset(msg_rx.stamp); /// set clock
                 break;
-            case TYPE_COMMAND_CAR_ACKERMANN:
+            case TYPE_CONFIG_ACKERMANN:
             {
-                static WheelCommand cmd;
-                object.get(cmd);
-                motor_controller->setCommand(cmd.wheel[REAR_WHEEL_LEFT ][ROTATION]*100., LEFT);
-                motor_controller->setCommand(cmd.wheel[REAR_WHEEL_RIGHT][ROTATION]*100., RIGHT);
-                float steering = cmd.wheel[FRONT_WHEEL_LEFT][STEERING]/2. + cmd.wheel[FRONT_WHEEL_RIGHT][STEERING]/2.;
-                steering_servo.write(steering*90+90);
+                if(config_ackermann == NULL)  config_ackermann = new ConfigAckermann;
+                object.get(*config_ackermann);
+            }
+            break;
+            case TYPE_COMMAND_ACKERMANN:
+            {
+                if(command_ackermann == NULL) command_ackermann = new CommandAckermann;
+                object.get(*command_ackermann);
+                if(command_ackermann->units == CommandAckermann::UNIT_DIRECT){
+                    motor_controller->setCommand(command_ackermann->forward*100., LEFT);
+                    motor_controller->setCommand(command_ackermann->forward*100., RIGHT);
+                    steering_servo.write(command_ackermann->steering*90+90);
+                }
             }
             break;
             default: /// case unkown type
@@ -72,24 +82,24 @@ void Car::uart_send()
     {
         msg_tx.push_object(Object(text, TYPE_TEXT));
     }
-    if(false) {
-        WheelCommand cmd;
-        cmd.wheel[REAR_WHEEL_LEFT ][ROTATION] = motor_controller->getCommand(LEFT) / 100.;
-        cmd.wheel[REAR_WHEEL_RIGHT][ROTATION] = motor_controller->getCommand(RIGHT) / 100.;
-        cmd.stamp.fromMicros(motor_controller->getTStampCommand());
-        msg_tx.push_object(Object(cmd, TYPE_COMMAND_CAR_ACKERMANN));
-    }
     if(true){
-        RaceCar car_state;
-        car_state.wheels[REAR_WHEEL_LEFT].target[ROTATION] = motor_controller->getCommand(LEFT) / 100.;
-        car_state.wheels[REAR_WHEEL_RIGHT].target[ROTATION] = motor_controller->getCommand(RIGHT) / 100.;
-        car_state.wheels_tstamp.target.fromMicros(motor_controller->getTStampCommand());
-        car_state.wheels[REAR_WHEEL_LEFT].speed[ROTATION] = motor_controller->motors[LEFT]->speedRPS;
-        car_state.wheels[REAR_WHEEL_RIGHT].speed[ROTATION] = motor_controller->motors[RIGHT]->speedRPS;
-        car_state.wheels_tstamp.speed.fromMicros(motor_controller->getTStampMeasurement());
-        car_state.stamp = Time::now();
-        msg_tx.push_object(Object(car_state, TYPE_RACE_CAR));
+        state_ackermann->wheels[REAR_WHEEL_LEFT].target[ROTATION] = motor_controller->getCommand(LEFT) / 100.;
+        state_ackermann->wheels[REAR_WHEEL_RIGHT].target[ROTATION] = motor_controller->getCommand(RIGHT) / 100.;
+        state_ackermann->wheels_tstamp.target.fromMicros(motor_controller->getTStampCommand());
+        state_ackermann->wheels[REAR_WHEEL_LEFT].speed[ROTATION] = motor_controller->motors[LEFT]->speedRPS;
+        state_ackermann->wheels[REAR_WHEEL_RIGHT].speed[ROTATION] = motor_controller->motors[RIGHT]->speedRPS;
+        state_ackermann->wheels_tstamp.speed.fromMicros(motor_controller->getTStampMeasurement());
+        state_ackermann->stamp = Time::now();
+        msg_tx.push_object(Object(*state_ackermann, TYPE_STATE_ACKERMANN));
     }
+    if(command_ackermann){
+        msg_tx.push_object(Object(*command_ackermann, TYPE_COMMAND_ACKERMANN));
+    }
+    if(config_ackermann){
+        msg_tx.push_object(Object(*config_ackermann, TYPE_CONFIG_ACKERMANN));
+    }
+    
+    
     msg_tx.send();
 }
 Car &Car::getInstance()
