@@ -8,7 +8,7 @@
 
 #include <car/firmware/bldc.h>
 #include <car/com/mc/interface.h>
-#include <car/bldc/Controller.h>
+#include <car/bldc/driver.h>
 #include <vector>
 #include <Servo.h>
 
@@ -27,12 +27,12 @@ namespace car
 
     private:
         Car();
-        std::vector<Motor> motors;
+        std::vector<car::bldc::Motor> motors;
 
         car::com::mc::Interface msg_tx; /// object to hande the serial communication
         car::com::mc::Interface msg_rx; /// object to hande the serial communication
         car::com::objects::Text text;   /// object to debug msgs
-        Controller *motor_controller;
+        car::bldc::Driver *motor_driver;
 
 
         Servo steering_servo; 

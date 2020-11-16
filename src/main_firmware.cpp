@@ -2,7 +2,7 @@
 // Created by firat on 20.01.20.
 //
 #include <array>
-#include "car/bldc/Controller.h"
+#include "car/bldc/driver.h"
 #include "car/bldc/utils.h"
 #include <arm_math.h>
 #include <car/time/cycle_rate.h>
@@ -33,7 +33,7 @@ void setup()
     while (!Serial)
         ;
     delay(1000);
-    Controller::getInstance().initHardware(13);
+    car::bldc::Driver::getInstance().initHardware(13);
 
     cli(); //Disable global interrupts
     NVIC_SET_PRIORITY(IRQ_FTM0, 64);
@@ -47,7 +47,7 @@ void loop()
     if (flag)
     {
         flag = false;
-        Controller::getInstance().run();
+        car::bldc::Driver::getInstance().run();
     }
 
     if (cycle_uart.passed() > 0) vehicle.uart_send();

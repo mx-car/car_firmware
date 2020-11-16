@@ -2,7 +2,7 @@
 // Created by firat on 20.01.20.
 //
 #include <array>
-#include "car/bldc/Controller.h"
+#include "car/bldc/driver.h"
 #include "car/bldc/utils.h"
 #include <arm_math.h>
 #include <car/com/mc/interface.h>
@@ -46,43 +46,43 @@ car::com::mc::Interface msg_tx; /// object to hande the serial communication
 car::com::mc::Interface msg_rx; /// object to hande the serial communication
 car::com::objects::Text text;   /// object to debug msgs
 
-car::com::objects::State getCommmand(Controller &controller){
+car::com::objects::State getCommmand(Driver &controller){
     static car::com::objects::State state;
-    state.rps[car::com::objects::State::LEFT] = controller.command[car::com::objects::State::LEFT];
-    state.rps[car::com::objects::State::RIGHT] = controller.command[car::com::objects::State::RIGHT];
-    state.stamp.fromMicros(controller.tstamp_command[car::com::objects::State::LEFT] / 2UL + controller.tstamp_command[car::com::objects::State::RIGHT] / 2UL );
+    state.rps[car::com::objects::State::LEFT] = driver.command[car::com::objects::State::LEFT];
+    state.rps[car::com::objects::State::RIGHT] = driver.command[car::com::objects::State::RIGHT];
+    state.stamp.fromMicros(driver.tstamp_command[car::com::objects::State::LEFT] / 2UL + driver.tstamp_command[car::com::objects::State::RIGHT] / 2UL );
     return state;
 }
 
-car::com::objects::State getState(Controller &controller){
+car::com::objects::State getState(Driver &driver){
     static car::com::objects::State state;
-    state.rps[car::com::objects::State::LEFT] = controller.speed[car::com::objects::State::LEFT];
-    state.rps[car::com::objects::State::RIGHT] = controller.speed[car::com::objects::State::RIGHT];
-    state.stamp.fromMicros(controller.tstamp_state[car::com::objects::State::LEFT] / 2UL + controller.tstamp_state[car::com::objects::State::RIGHT] / 2UL );
+    state.rps[car::com::objects::State::LEFT] = driver.speed[car::com::objects::State::LEFT];
+    state.rps[car::com::objects::State::RIGHT] = driver.speed[car::com::objects::State::RIGHT];
+    state.stamp.fromMicros(driver.tstamp_state[car::com::objects::State::LEFT] / 2UL + driver.tstamp_state[car::com::objects::State::RIGHT] / 2UL );
     state.stamp.now();
     return state;
 }
 
 
-void setCommmand(Controller &controller, car::com::objects::State state){
-    controller.tstamp_command[car::com::objects::State::LEFT] = micros();
-    controller.tstamp_command[car::com::objects::State::RIGHT] = micros();
-    controller.command[car::com::objects::State::LEFT] = state.rps[car::com::objects::State::LEFT];
-    controller.command[car::com::objects::State::RIGHT] = state.rps[car::com::objects::State::RIGHT];
+void setCommmand(Driver &driver, car::com::objects::State state){
+    driver.tstamp_command[car::com::objects::State::LEFT] = micros();
+    driver.tstamp_command[car::com::objects::State::RIGHT] = micros();
+    driver.command[car::com::objects::State::LEFT] = state.rps[car::com::objects::State::LEFT];
+    driver.command[car::com::objects::State::RIGHT] = state.rps[car::com::objects::State::RIGHT];
     myservo.write(state.steering);
 }
 
 void setup()
 {
 #if defined(NEW_BOARD)
-    Controller::getInstance().registerMotors(&motor0); // 80
+    Driver::getInstance().registerMotors(&motor0); // 80
     motor0.setAngleOffset(-10);                        // - 10 seems aight for CCW
     motor0.setAsRightWheel();
-    Controller::getInstance().registerMotors(&motor1);
+    Driver::getInstance().registerMotors(&motor1);
     motor1.setAngleOffset(-10); // - 110 is da best for direction, - 10 for the other one
     myservo.attach(4); 
 #else
-    Controller::getInstance().registerMotors(&x);
+    Driver::getInstance().registerMotors(&x);
 #endif
     Serial.begin(115200); /// init serial
     msg_rx.try_sync();    /// blocks until a sync message arrives
@@ -90,7 +90,7 @@ void setup()
     while (!Serial)
         ;
     delay(1000);
-    Controller::getInstance().initHardware(13);
+    Driver::getInstance().initHardware(13);
 
     cli(); //Disable global interrupts
     NVIC_SET_PRIORITY(IRQ_FTM0, 64);
@@ -104,7 +104,7 @@ void loop()
     if (flag)
     {
         flag = false;
-        Controller::getInstance().run();
+        Driver::getInstance().run();
         //uint16_t rotaryEncoderValue = RotaryEncoderCommunication::SPITransfer(motor1);
         //Serial.println(rotaryEncoderValue);
     }
@@ -116,8 +116,8 @@ void loop()
         {
             msg_tx.push_object(car::com::objects::Object(text, car::com::objects::TYPE_TEXT));
         }
-        msg_tx.push_object(car::com::objects::Object(getCommmand(Controller::getInstance()), car::com::objects::TYPE_COMMAND_RAW));
-        msg_tx.push_object(car::com::objects::Object(getState(Controller::getInstance()), car::com::objects::TYPE_STATE_RAW));
+        msg_tx.push_object(car::com::objects::Object(getCommmand(Driver::getInstance()), car::com::objects::TYPE_COMMAND_RAW));
+        msg_tx.push_object(car::com::objects::Object(getState(Driver::getInstance()), car::com::objects::TYPE_STATE_RAW));
         msg_tx.send();
     }
 
@@ -136,7 +136,7 @@ void loop()
             {
                 static car::com::objects::CmdRaw command;                
                 object.get(command);
-                setCommmand(Controller::getInstance(), command);
+                setCommmand(Driver::getInstance(), command);
             }
             break;
             default: /// case unkown type

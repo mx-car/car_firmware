@@ -6,23 +6,24 @@ using namespace car;
 
 Car::Car()
 {
-    constexpr INHPins inhibitPins_{33, 26, 31};
-    constexpr PWMPins initPins{10, 22, 23};
-    constexpr ISPins isPins{A15, A16, A17};
+    constexpr car::bldc::INHPins inhibitPins_{33, 26, 31};
+    constexpr car::bldc::PWMPins initPins{10, 22, 23};
+    constexpr car::bldc::ISPins isPins{A15, A16, A17};
 
-    constexpr INHPins inhibitPins2{28, 8, 25};
-    constexpr PWMPins initPins2{5, 6, 9};
-    constexpr ISPins isPins2{A15, A16, A17};
+    constexpr car::bldc::INHPins inhibitPins2{28, 8, 25};
+    constexpr car::bldc::PWMPins initPins2{5, 6, 9};
+    constexpr car::bldc::ISPins isPins2{A15, A16, A17};
     //    motors.emplace_back(std::move(Motor(inhibitPins_, initPins, 2, isPins)));
     //motors.emplace_back(std::move(Motor(inhibitPins2, initPins2, 2, isPins2)));
-    Motor *motor0 = new Motor(inhibitPins_, initPins, 2, isPins);
-    Motor *motor1 = new Motor(inhibitPins2, initPins2, 14, isPins2);
+    
+    car::bldc::Motor *motor0 = new car::bldc::Motor(inhibitPins_, initPins, 2, isPins);
+    car::bldc::Motor *motor1 = new car::bldc::Motor(inhibitPins2, initPins2, 14, isPins2);
 
-    motor_controller = &Controller::getInstance();
-    motor_controller->registerMotors(motor0); // 80
+    motor_driver = &car::bldc::Driver::getInstance();
+    motor_driver->registerMotors(motor0); // 80
     motor0->setAngleOffset(-10);  
     motor0->setAsRightWheel();
-    motor_controller->registerMotors(motor1);
+    motor_driver->registerMotors(motor1);
     motor0->setAngleOffset(-10); // - 110 is da best for direction, - 10 for the other one                   // - 10 seems aight for CCW
 
     steering_servo.attach(4); 
@@ -61,8 +62,8 @@ void Car::uart_receive()
                 if(command_ackermann == NULL) command_ackermann = new CommandAckermann;
                 object.get(*command_ackermann);
                 if(command_ackermann->units == CommandAckermann::UNIT_DIRECT){
-                    motor_controller->setCommand(command_ackermann->forward*100., LEFT);
-                    motor_controller->setCommand(command_ackermann->forward*100., RIGHT);
+                    motor_driver->setCommand(command_ackermann->forward* 100., LEFT);
+                    motor_driver->setCommand(command_ackermann->forward*-100., RIGHT);
                     steering_servo.write(command_ackermann->steering*90+90);
                 }
             }
@@ -77,18 +78,19 @@ void Car::uart_receive()
 void Car::uart_send()
 {
     using namespace car::com::objects;
+    using namespace car::bldc;
     msg_tx.reset(); /// removes all objects in message
     if (!text.empty())
     {
         msg_tx.push_object(Object(text, TYPE_TEXT));
     }
     if(true){
-        state_ackermann->wheels[REAR_WHEEL_LEFT].target[ROTATION] = motor_controller->getCommand(LEFT) / 100.;
-        state_ackermann->wheels[REAR_WHEEL_RIGHT].target[ROTATION] = motor_controller->getCommand(RIGHT) / 100.;
-        state_ackermann->wheels_tstamp.target.fromMicros(motor_controller->getTStampCommand());
-        state_ackermann->wheels[REAR_WHEEL_LEFT].speed[ROTATION] = motor_controller->motors[LEFT]->speedRPS;
-        state_ackermann->wheels[REAR_WHEEL_RIGHT].speed[ROTATION] = motor_controller->motors[RIGHT]->speedRPS;
-        state_ackermann->wheels_tstamp.speed.fromMicros(motor_controller->getTStampMeasurement());
+        state_ackermann->wheels[REAR_WHEEL_LEFT].target[ROTATION] = motor_driver->getCommand(LEFT) / 100.;
+        state_ackermann->wheels[REAR_WHEEL_RIGHT].target[ROTATION] = motor_driver->getCommand(RIGHT) / 100.;
+        state_ackermann->wheels_tstamp.target.fromMicros(motor_driver->getTStampCommand());
+        state_ackermann->wheels[REAR_WHEEL_LEFT].speed[ROTATION] = motor_driver->motors[LEFT]->speedRPS;
+        state_ackermann->wheels[REAR_WHEEL_RIGHT].speed[ROTATION] = motor_driver->motors[RIGHT]->speedRPS;
+        state_ackermann->wheels_tstamp.speed.fromMicros(motor_driver->getTStampMeasurement());
         state_ackermann->stamp = Time::now();
         msg_tx.push_object(Object(*state_ackermann, TYPE_STATE_ACKERMANN));
     }
