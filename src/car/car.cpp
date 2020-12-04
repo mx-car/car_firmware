@@ -62,7 +62,7 @@ void Car::uart_receive()
                 object.get(*command_ackermann);
                 if(command_ackermann->units == CommandAckermann::UNIT_DIRECT){
                     motor_driver->setCommand(command_ackermann->forward* 100., LEFT);
-                    motor_driver->setCommand(command_ackermann->forward*-100., RIGHT);
+                    motor_driver->setCommand(command_ackermann->forward* 100., RIGHT);
                     steering_servo.write(command_ackermann->steering*90+90);
                 }
             }
