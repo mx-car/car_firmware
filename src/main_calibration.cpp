@@ -55,8 +55,8 @@ void loop() {
 
     if (flag) {
         flag = false;
-        car::bldc::Driver::getInstance().run();
-        //car::bldc::Diagnostics::calculateAngleFiner(motor0,motor1);
+        //car::bldc::Driver::getInstance().run();
+        car::bldc::Diagnostics::calculateAngleFiner(motor0,motor1);
         //uint16_t rotaryEncoderValue = car::bldc::RotaryEncoder::SPITransfer(motor0);
         //Serial.println(rotaryEncoderValue);
     }
