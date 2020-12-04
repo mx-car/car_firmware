@@ -21,10 +21,9 @@ Car::Car()
 
     motor_driver = &car::bldc::Driver::getInstance();
     motor_driver->registerMotors(motor0); // 80
-    motor0->setAngleOffset(-10);  
-    motor0->setAsRightWheel();
+    motor0->setAsLeftWheel();
     motor_driver->registerMotors(motor1);
-    motor0->setAngleOffset(-10); // - 110 is da best for direction, - 10 for the other one                   // - 10 seems aight for CCW
+
 
     steering_servo.attach(4); 
     config_ackermann = NULL;
