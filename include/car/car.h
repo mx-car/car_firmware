@@ -27,7 +27,6 @@ namespace car
 
     private:
         Car();
-        std::vector<car::bldc::Motor> motors;
 
         car::com::mc::Interface msg_tx; /// object to hande the serial communication
         car::com::mc::Interface msg_rx; /// object to hande the serial communication
