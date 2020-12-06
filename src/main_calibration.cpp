@@ -7,6 +7,8 @@
 #include <car/time/cycle_rate.h>
 #include <Servo.h>
 
+#define CALIBRATE 1
+
 constexpr car::bldc::INHPins inhibitPins_{33, 26, 31};
 constexpr car::bldc::PWMPins initPins{10, 22, 23};
 constexpr car::bldc::ISPins isPins{A15, A16, A17};
@@ -55,9 +57,15 @@ void loop() {
 
     if (flag) {
         flag = false;
-        //car::bldc::Driver::getInstance().run();
+#if CALIBARATE
         car::bldc::Diagnostics::calculateAngleFiner(motor0,motor1);
+#else
+        car::bldc::Driver::getInstance().run();
         //uint16_t rotaryEncoderValue = car::bldc::RotaryEncoder::SPITransfer(motor0);
         //Serial.println(rotaryEncoderValue);
+        //
+        //
+        #endif
+
     }
 }
