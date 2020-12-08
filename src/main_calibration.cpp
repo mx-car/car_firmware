@@ -57,7 +57,7 @@ void loop() {
 
     if (flag) {
         flag = false;
-#if CALIBARATE
+#if CALIBRATE
         car::bldc::Diagnostics::calculateAngleFiner(motor0,motor1);
 #else
         car::bldc::Driver::getInstance().run();

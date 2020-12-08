@@ -12,6 +12,7 @@
 
 car::time::CycleRate cycle_uart(100);
 car::time::CycleRate cycle_whatchdog(1000);
+//car::time::CycleRate cycle_odom(10);
 
 
 car::Car vehicle = car::Car::getInstance();
@@ -30,8 +31,8 @@ void setup()
 {
     vehicle.uart_init();    /// blocks until a sync message arrives
 
-    while (!Serial)
-        ;
+    while (!Serial);
+    
     delay(1000);
     car::bldc::Driver::getInstance().initHardware(13);
 
@@ -51,5 +52,7 @@ void loop()
     }
 
     if (cycle_uart.passed() > 0) vehicle.uart_send();
+    //if (cycle_odom.passed() > 0) vehicle.odometrie_update();
     vehicle.uart_receive();
+
 }

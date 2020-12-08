@@ -27,8 +27,9 @@ Car::Car()
 
     steering_servo.attach(4); 
     config_ackermann = NULL;
-    command_ackermann = NULL;
-    state_ackermann = new car::com::objects::StateAckermann();
+    command_ackermann = NULL;  
+    state_ackermann = new car::com::objects::StateAckermann;
+
 }
 
 void Car::uart_init()
@@ -52,7 +53,10 @@ void Car::uart_receive()
                 break;
             case TYPE_CONFIG_ACKERMANN:
             {
-                if(config_ackermann == NULL)  config_ackermann = new ConfigAckermann;
+                if(config_ackermann == NULL)  {
+                    config_ackermann = new ConfigAckermann;
+                    state_ackermann = new car::com::objects::StateAckermann();
+                }
                 object.get(*config_ackermann);
             }
             break;
@@ -83,13 +87,13 @@ void Car::uart_send()
     {
         msg_tx.push_object(Object(text, TYPE_TEXT));
     }
-    if(true){
+    if(state_ackermann){
         state_ackermann->wheels[REAR_WHEEL_LEFT].target[ROTATION] = motor_driver->getCommand(LEFT) / 100.;
         state_ackermann->wheels[REAR_WHEEL_RIGHT].target[ROTATION] = motor_driver->getCommand(RIGHT) / 100.;
-        state_ackermann->wheels_tstamp.target.fromMicros(motor_driver->getTStampCommand());
+        state_ackermann->wheels_tstamp.target = Time::fromMicros(motor_driver->getTStampCommand());
         state_ackermann->wheels[REAR_WHEEL_LEFT].speed[ROTATION] = motor_driver->motors[LEFT]->speedRPS;
         state_ackermann->wheels[REAR_WHEEL_RIGHT].speed[ROTATION] = motor_driver->motors[RIGHT]->speedRPS;
-        state_ackermann->wheels_tstamp.speed.fromMicros(motor_driver->getTStampMeasurement());
+        state_ackermann->wheels_tstamp.speed =  Time::fromMicros(motor_driver->getTStampMeasurement());
         state_ackermann->stamp = Time::now();
         msg_tx.push_object(Object(*state_ackermann, TYPE_STATE_ACKERMANN));
     }
@@ -99,12 +103,6 @@ void Car::uart_send()
     if(config_ackermann){
         msg_tx.push_object(Object(*config_ackermann, TYPE_CONFIG_ACKERMANN));
     }
-    if(false){
-        Array<4> a;
-        for(int i = 0; i < 4; i++) a.values[i] = rand()/1000.0;
-        a.values[0] = 1.1234; a.values[3] = 3.543; 
-        msg_tx.push_object(Object(a, TYPE_ARRAY_4N));
-    }
     
     
     msg_tx.send();
@@ -113,4 +111,13 @@ Car &Car::getInstance()
 {
     static Car instance;
     return instance;
+}
+
+void Car::odometrie_update()
+{
+    /*
+    if(!odometry) return;
+    using namespace car::com::objects;
+    odometry->update(motor_driver->motors[car::com::objects::LEFT]->speedRPS, motor_driver->motors[car::com::objects::RIGHT]->speedRPS, 0.);
+    */
 }

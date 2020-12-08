@@ -9,6 +9,7 @@
 #include <car/firmware/bldc.h>
 #include <car/com/mc/interface.h>
 #include <car/bldc/driver.h>
+#include <car/motion/odometry.h>
 #include <vector>
 #include <Servo.h>
 
@@ -25,6 +26,8 @@ namespace car
         void uart_receive();
         void uart_send();
 
+        void odometrie_update();
+
     private:
         Car();
 
@@ -32,6 +35,7 @@ namespace car
         car::com::mc::Interface msg_rx; /// object to hande the serial communication
         car::com::objects::Text text;   /// object to debug msgs
         car::bldc::Driver *motor_driver;
+        //car::motion::OdomAckermann *odometry;
 
 
         Servo steering_servo; 
