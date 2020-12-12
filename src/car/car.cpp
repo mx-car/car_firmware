@@ -28,7 +28,8 @@ Car::Car()
     steering_servo.attach(4); 
     config_ackermann = NULL;
     command_ackermann = NULL;  
-    state_ackermann = new car::com::objects::StateAckermann;
+    state_ackermann = new car::com::objects::StateAckermann;    
+    odometry = new car::motion::OdomAckermann;
 
 }
 
@@ -65,8 +66,8 @@ void Car::uart_receive()
                 if(command_ackermann == NULL) command_ackermann = new CommandAckermann;
                 object.get(*command_ackermann);
                 if(command_ackermann->units == CommandAckermann::UNIT_DIRECT){
-                    motor_driver->setCommand(command_ackermann->forward* 100., LEFT);
-                    motor_driver->setCommand(command_ackermann->forward* 100., RIGHT);
+                    motor_driver->setCommand(command_ackermann->forward, command_ackermann->inhibitor, LEFT);
+                    motor_driver->setCommand(command_ackermann->forward, command_ackermann->inhibitor, RIGHT);
                     steering_servo.write(command_ackermann->steering*90+90);
                 }
             }
@@ -94,6 +95,7 @@ void Car::uart_send()
         state_ackermann->wheels[REAR_WHEEL_LEFT].speed[ROTATION] = motor_driver->motors[LEFT]->speedRPS;
         state_ackermann->wheels[REAR_WHEEL_RIGHT].speed[ROTATION] = motor_driver->motors[RIGHT]->speedRPS;
         state_ackermann->wheels_tstamp.speed =  Time::fromMicros(motor_driver->getTStampMeasurement());
+        odometry->getPose(state_ackermann->pose);
         state_ackermann->stamp = Time::now();
         msg_tx.push_object(Object(*state_ackermann, TYPE_STATE_ACKERMANN));
     }
@@ -115,9 +117,8 @@ Car &Car::getInstance()
 
 void Car::odometrie_update()
 {
-    /*
+    
     if(!odometry) return;
     using namespace car::com::objects;
     odometry->update(motor_driver->motors[car::com::objects::LEFT]->speedRPS, motor_driver->motors[car::com::objects::RIGHT]->speedRPS, 0.);
-    */
 }

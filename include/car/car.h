@@ -35,7 +35,7 @@ namespace car
         car::com::mc::Interface msg_rx; /// object to hande the serial communication
         car::com::objects::Text text;   /// object to debug msgs
         car::bldc::Driver *motor_driver;
-        //car::motion::OdomAckermann *odometry;
+        car::motion::OdomAckermann *odometry;
 
 
         Servo steering_servo; 
